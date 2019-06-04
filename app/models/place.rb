@@ -20,6 +20,15 @@ class Place
 	  Place.collection.indexes.drop_one("geometry.geolocation_2dsphere")
 	end
 
+	def self.near(point, max_meters=0)
+	  self.collection.find(:"geometry.geolocation" => {:$near=>{:$geometry=>point.to_hash,:$maxDistance=>max_meters}})
+	end
+     
+    def near(max_meters=0)
+        self.class.to_places(self.class.near(@location, max_meters))
+    end
+ 
+
     def self.get_address_components( sort={:_id => 1}, offset=0, limit=999)
         self.collection.find.aggregate([{:$project=> {
                  :_id => 1, :address_components=> 1, :formatted_address => 1, 'geometry.geolocation': 1}},
