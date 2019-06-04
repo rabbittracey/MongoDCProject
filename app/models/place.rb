@@ -13,6 +13,39 @@ class Place
 		end
 	end
 
+	def self.create_indexes
+	  Place.collection.indexes.create_one({"geometry.geolocation"=>Mongo::Index::GEO2DSPHERE})
+	end
+	def self.remove_indexes
+	  Place.collection.indexes.drop_one("geometry.geolocation_2dsphere")
+	end
+
+    def self.get_address_components( sort={:_id => 1}, offset=0, limit=999)
+        self.collection.find.aggregate([{:$project=> {
+                 :_id => 1, :address_components=> 1, :formatted_address => 1, 'geometry.geolocation': 1}},
+       {:$unwind=>'$address_components'},{:$sort=>sort},{:$skip=> offset},{:$limit=>limit}])
+       
+    end
+    def self.find_ids_by_country_code country_code 
+    	result = collection.find().aggregate([
+    		    {:$match=>{"address_components.short_name"=>country_code}},
+				{:$project=>{ :_id=>1}}
+			   ])
+		return result.to_a.map {|h| h[:_id].to_s}
+    end
+
+    def self.get_country_names
+		result = collection.find().aggregate([
+				{:$project=>{ "address_components.long_name"=>1, "address_components.types"=>1}},
+				{:$unwind=>"$address_components"},
+				{:$match=>{"address_components.types"=>"country"}},
+				{:$group=>{ :_id=>'$address_components.long_name'}}])
+		return result.to_a.map {|h| h[:_id]}
+	end
+
+
+
+
 	def self.find_by_short_name short_name
 	    result = self.collection.find( { 'address_components.short_name' => short_name })
 	    return result.nil? ? nil : result
