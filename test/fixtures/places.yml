@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  id: MyString
+  formatted_address: MyString
+  location: 
+  address_components: MyString
+  AddressComponents: MyString
+
+two:
+  id: MyString
+  formatted_address: MyString
+  location: 
+  address_components: MyString
+  AddressComponents: MyString
