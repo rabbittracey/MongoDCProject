@@ -12,7 +12,9 @@ class Place
 		  end
 		end
 	end
-
+	def persisted?
+		!@id.nil?
+	end
 	def self.create_indexes
 	  Place.collection.indexes.create_one({"geometry.geolocation"=>Mongo::Index::GEO2DSPHERE})
 	end
@@ -27,7 +29,6 @@ class Place
     def near(max_meters=0)
         self.class.to_places(self.class.near(@location, max_meters))
     end
- 
 
     def self.get_address_components( sort={:_id => 1}, offset=0, limit=999)
         self.collection.find.aggregate([{:$project=> {
@@ -87,18 +88,6 @@ class Place
 	    return final_result
 	end
 
-
-	# def persisted?
-	# 	!@id.nil?
-	# end
-	# def created_at
-	# 	nil
-	# end
-	# def updated_at
-	# 	nil
-	# end
-
-	
 	def self.mongo_client
 		Mongoid::Clients.default
 	end
@@ -116,79 +105,19 @@ class Place
               .find(_id:BSON::ObjectId.from_string(@id))
               .delete_one   
   end  
-
-	# def self.all(prototype={}, sort={:number => 1}, offset=0, limit=nil)
- #    #map internal :population term to :pop document term
- #    tmp = {} #hash needs to stay in stable order provided
- #    sort.each {|k,v| 
- #      tmp[k] = v  if [:number,:first_name,:last_name,:gender,:group,:secs].include?(k)
- #    }
- #    sort=tmp
-
- #    Rails.logger.debug {"getting all racers, prototype=#{prototype}, sort=#{sort}, offset=#{offset}, limit=#{limit}"}
-
- #    result=collection.find(prototype)
- #          .projection({_id:true, first_name:true, last_name:true, number:true,gender: true,group:true,secs:true})
- #          .sort(sort)
- #          .skip(offset)
- #    result=result.limit(limit) if !limit.nil?
- #    return result
- #  end
- #  def self.find id
- #  	result=collection.find(:_id=>BSON::ObjectId.from_string(id))
- #                    .projection({_id:true, first_name:true, last_name:true, number:true,gender: true,group:true,secs:true})
- #                    .first
- #  	return result.nil? ? nil : Racer.new(result)
- #  end
-
- #  def self.paginate(params)
- #    page=(params[:page] ||= 1).to_i
- #    limit=(params[:per_page] ||= 30).to_i
- #    offset=(page-1)*limit
- #    sort=params[:sort] ||= {}
-
- #    #get the associated page of Zips -- eagerly convert doc to Zip
- #    racers=[]
- #    all({},{}, offset, limit).each do |doc|
- #      racers << Racer.new(doc)
- #    end
-
- #    #get a count of all documents in the collection
- #    total=all({},{}, 0, 1).count
-    
- #    WillPaginate::Collection.create(page, limit, total) do |pager|
- #      pager.replace(racers)
- #    end    
- #  end
   
- #  def save 
- #    Rails.logger.debug {"saving #{self}"}
+  def photos(offset=0, limit=1000)
 
- #    result=self.class.collection
- #              .insert_one(_id:@id, first_name:@first_name,last_name:@last_name,number:@number,gender:@gender,group:@group,secs:@secs)
- #    @id=result.inserted_id
- #  end
- #  def update(params)
-	# @number=params[:number].to_i
-	# @first_name=params[:first_name]
-	# @last_name=params[:last_name]
-	# @secs=params[:secs].to_i
- #    @gender = params[:gender]
- #    @group = params[:group]
-	# params.slice!(:number, :first_name, :last_name, :gender, :group, :secs) 
-	# self.class.collection
-	# 		  .find(_id:BSON::ObjectId.from_string(@id.to_s))
-	# 		  .update_one(first_name:@first_name,last_name:@last_name,number:@number,gender:@gender,group:@group,secs:@secs)
-
- #  end
- #  def destroy
- #    Rails.logger.debug {"destroying #{self}"}
-
- #    self.class.collection
- #              .find(_id:BSON::ObjectId.from_string(@id.to_s))
- #              .delete_one   
- #  end  
-
+  	result=Photo.find_photos_for_place(self.id).skip(offset)
+	    result=result.limit(limit) if !limit.nil?
+	    final_result= []
+	    if !result.nil?
+	      result.each do |r|
+	      	final_result << Photo.new(r)
+	      end
+	    end
+	    return final_result
+    end 
 end
 
 
